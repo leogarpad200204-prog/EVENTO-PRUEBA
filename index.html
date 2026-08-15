@@ -14,9 +14,16 @@
     <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center space-y-4">
       <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">🔒</div>
       <h2 class="text-xl font-bold text-slate-800">Acceso Restringido</h2>
-      <p class="text-xs text-slate-500">Ingresa la contraseña para acceder al sistema.</p>
+      <p class="text-xs text-slate-500">POR FAVOR INGRESA LA CONTRASEÑA PARA ACCEDER AL PANEL DE OPERACIONES DE GRUPO GARHER.</p>
       <form id="form-login" class="space-y-3">
         <input type="password" id="clave-input" placeholder="Contraseña" required class="w-full p-3 border border-slate-300 rounded-xl text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 outline-none">
+
+        <select id="modulo-login" required class="w-full p-3 border border-slate-300 rounded-xl text-sm text-slate-700 bg-white focus:ring-2 focus:ring-blue-500 outline-none">
+          <option value="" selected disabled>Selecciona el apartado</option>
+          <option value="mesas">📸 Evento de Mesas</option>
+          <option value="paquetes">🎉 Paquetes Foto y Video</option>
+        </select>
+
         <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-sm">Entrar</button>
       </form>
       <p id="login-error" class="text-xs text-red-500 font-semibold hidden">Contraseña incorrecta.</p>
@@ -84,7 +91,9 @@
   <div id="app-content" class="max-w-6xl mx-auto space-y-6 hidden">
     
     <header class="text-center py-5 bg-slate-900 text-white rounded-2xl shadow-md relative px-4">
-      <h1 class="text-2xl md:text-3xl font-bold">Sistema de Gestión y Finanzas</h1>
+      <h1 class="text-2xl md:text-3xl font-bold">Sistema de Gestión y Contratos</h1>
+      <h1>FOTO Y VIDEO GARHER</h1>
+      <H1>RENOVAR O MORIR</H1>
       <button id="btn-logout" class="sm:absolute sm:right-4 sm:top-1/2 sm:-translate-y-1/2 mt-3 sm:mt-0 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700">🔒 Salir</button>
     </header>
 
@@ -97,7 +106,7 @@
     <main id="modulo-mesas" class="space-y-6 hidden">
       <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-6">
         <section class="border-b pb-5">
-          <h3 class="text-md font-bold mb-3 text-slate-700">1.1 Configurar Integrantes e Impresiones (%)</h3>
+          <h3 class="text-md font-bold mb-3 text-slate-700">CONFIGURAR O AGREGAR RUBROS (%)</h3>
           <form id="form-rubro" class="flex flex-col sm:flex-row gap-3 mb-4">
             <input type="text" id="rubro-nombre" placeholder="Nombre" required class="flex-1 p-2.5 border rounded-xl text-sm">
             <div class="flex gap-2">
@@ -115,7 +124,7 @@
         <section class="border-b pb-5">
           <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
             <div>
-              <h3 class="text-md font-bold text-slate-700">1.2 Inventario de Material</h3>
+              <h3 class="text-md font-bold text-slate-700">CONTROL DE INVENTARIO </h3>
               <p class="text-xs text-slate-500 mt-1">Agrega material cuando recibas existencias nuevas. El sistema conservará el total ingresado y calculará automáticamente lo disponible.</p>
             </div>
             <button type="button" id="btn-reiniciar-material" class="shrink-0 bg-red-100 hover:bg-red-200 text-red-700 border border-red-200 px-3 py-2 rounded-xl text-xs font-bold">🗑️ Reiniciar material a 0</button>
@@ -148,22 +157,22 @@
         </section>
 
         <section class="border-b pb-5">
-          <h3 class="text-md font-bold mb-3 text-slate-700">1.3 Registrar Venta Directa / Fotos</h3>
+          <h3 class="text-md font-bold mb-3 text-slate-700">REGISTRO DE EVENTO Y REPARTO</h3>
           <form id="form-evento" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <input type="date" id="evento-fecha" required class="p-2.5 border rounded-xl text-sm">
             <input type="text" id="evento-nombre" placeholder="Cliente / Descripción" required class="p-2.5 border rounded-xl text-sm">
             <input type="number" id="evento-fotos" placeholder="Total de fotos" min="0" required class="p-2.5 border rounded-xl text-sm">
-            <input type="number" id="evento-monto" placeholder="Total Cobrado ($)" step="0.01" min="0" required class="p-2.5 border rounded-xl text-sm">
+            <input type="number" id="evento-monto" placeholder="Total de venta ($)" step="0.01" min="0" required class="p-2.5 border rounded-xl text-sm">
             <div class="md:col-span-2 lg:col-span-4 bg-slate-50 border rounded-xl px-3 py-2 text-xs text-slate-600">
               Cada foto impresa descontará automáticamente <strong>1 folder</strong> y <strong>1 hoja</strong>.
             </div>
-            <button type="submit" class="md:col-span-2 lg:col-span-4 bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm">Guardar Venta y Descontar Material</button>
+            <button type="submit" class="md:col-span-2 lg:col-span-4 bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm">Guardar Venta y Conteo de Material</button>
           </form>
         </section>
 
         <section>
           <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mb-3">
-            <h3 class="text-md font-bold text-slate-700">1.4 Historial Mesas</h3>
+            <h3 class="text-md font-bold text-slate-700">HISTORIAL DE VENTA (MESAS)</h3>
             <div class="flex gap-2 w-full sm:w-auto">
               <button id="btn-excel" class="bg-slate-800 text-white px-3 py-2 rounded-xl text-xs">Descargar Excel</button>
               <button id="btn-limpiar-mesas" class="bg-red-100 text-red-700 px-3 py-2 rounded-xl text-xs font-semibold">🗑️ Limpiar Historial</button>
@@ -172,7 +181,7 @@
           <div class="overflow-x-auto">
             <table id="tabla-historial" class="w-full text-left border-collapse text-sm">
               <thead>
-                <tr class="bg-slate-100 border-b"><th class="p-2.5">Fecha</th><th class="p-2.5">Cliente</th><th class="p-2.5">Total</th><th class="p-2.5">Impresión</th><th class="p-2.5">Material usado</th><th class="p-2.5">Neto</th><th class="p-2.5">Desglose</th><th class="p-2.5">Restante</th></tr>
+                <tr class="bg-slate-100 border-b"><th class="p-2.5">Fecha</th><th class="p-2.5">Evento</th><th class="p-2.5">Total</th><th class="p-2.5">Impresión</th><th class="p-2.5">Material usado</th><th class="p-2.5">Neto</th><th class="p-2.5">Desglose</th><th class="p-2.5">Restante</th></tr>
               </thead>
               <tbody id="tbody-historial" class="divide-y"></tbody>
             </table>
@@ -187,7 +196,7 @@
 
         <!-- Catálogo de Paquetes Editable -->
         <section class="border-b pb-5">
-          <h3 class="text-md font-bold mb-3 text-slate-700">2.1 Catálogo de Paquetes de Contratación</h3>
+          <h3 class="text-md font-bold mb-3 text-slate-700">CATÁLOGO DE PAQUETES DE CONTRATACIÓN</h3>
           <form id="form-catalogo-paquete" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
             <input type="text" id="cat-nombre" placeholder="Nombre Paquete (Ej. Paquete 1)" required class="p-2.5 border rounded-xl text-sm">
             <input type="number" id="cat-precio" placeholder="Precio ($)" step="0.01" min="0" required class="p-2.5 border rounded-xl text-sm">
@@ -216,7 +225,7 @@
 
         <!-- Registro de Evento con Calculadora -->
         <section class="border-b pb-5">
-          <h3 class="text-md font-bold mb-3 text-slate-700">2.3 Registrar Nueva Contratación de Evento</h3>
+          <h3 class="text-md font-bold mb-3 text-slate-700">REGISTRAR NUEVA CONTRATACIÓN DE EVENTO</h3>
           
           <form id="form-contratacion" class="space-y-4">
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
@@ -258,7 +267,7 @@
 
             <!-- Calculadora y Reparto en Tiempo Real -->
             <div class="bg-purple-50 p-4 rounded-2xl border border-purple-200 space-y-3">
-              <div class="font-bold text-purple-900 text-sm">⚡ Simulación y Cálculo Financiero en Tiempo Real:</div>
+              <div class="font-bold text-purple-900 text-sm">⚡Cálculo Financiero:</div>
               <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label class="text-xs font-bold text-purple-900">Monto Total Paquete ($)</label>
@@ -289,7 +298,7 @@
         <!-- Registros y Tabla Completa -->
         <section>
           <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mb-3">
-            <h3 class="text-md font-bold text-slate-700">2.4 Agenda General de Eventos de Foto y Video</h3>
+            <h3 class="text-md font-bold text-slate-700">AGENDA GENERAL DE EVENTO DE FOTO Y VIDEO GARHER-</h3>
             <div class="flex gap-2 w-full sm:w-auto">
               <button id="btn-excel-paquetes" class="bg-purple-900 text-white px-3 py-2 rounded-xl text-xs">Exportar Excel</button>
               <button id="btn-limpiar-paquetes" class="bg-red-100 text-red-700 px-3 py-2 rounded-xl text-xs font-semibold">🗑️ Limpiar Historial</button>
@@ -345,16 +354,25 @@
     const appContent = document.getElementById('app-content');
     const formLogin = document.getElementById('form-login');
     const claveInput = document.getElementById('clave-input');
+    const moduloLogin = document.getElementById('modulo-login');
     const loginError = document.getElementById('login-error');
     const btnLogout = document.getElementById('btn-logout');
 
-    if (localStorage.getItem('auth_finanzas') === 'true') mostrarApp();
+    if (localStorage.getItem('auth_finanzas') === 'true') {
+      mostrarApp(localStorage.getItem('modulo_finanzas') || 'paquetes');
+    }
 
     formLogin.addEventListener('submit', (e) => {
       e.preventDefault();
+
       if (claveInput.value === CLAVE_CORRECTA) {
+        const moduloSeleccionado = moduloLogin.value;
+
         localStorage.setItem('auth_finanzas', 'true');
-        mostrarApp();
+        localStorage.setItem('modulo_finanzas', moduloSeleccionado);
+
+        loginError.classList.add('hidden');
+        mostrarApp(moduloSeleccionado);
       } else {
         loginError.classList.remove('hidden');
         claveInput.value = '';
@@ -363,12 +381,14 @@
 
     btnLogout.addEventListener('click', () => {
       localStorage.removeItem('auth_finanzas');
+      localStorage.removeItem('modulo_finanzas');
       location.reload();
     });
 
-    function mostrarApp() {
+    function mostrarApp(modulo = 'paquetes') {
       modalLogin.classList.add('hidden');
       appContent.classList.remove('hidden');
+      cambiarModulo(modulo);
     }
 
     const firebaseConfig = {
