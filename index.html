@@ -1,0 +1,661 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Control Financiero y Eventos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+</head>
+<body class="bg-slate-100 text-slate-800 font-sans p-3 md:p-8">
+
+  <!-- Modal de Inicio de Sesión -->
+  <div id="modal-login" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white rounded-2xl shadow-xl max-w-sm w-full p-6 text-center space-y-4">
+      <div class="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto text-xl font-bold">🔒</div>
+      <h2 class="text-xl font-bold text-slate-800">Acceso Restringido</h2>
+      <p class="text-xs text-slate-500">Ingresa la contraseña para acceder al sistema.</p>
+      <form id="form-login" class="space-y-3">
+        <input type="password" id="clave-input" placeholder="Contraseña" required class="w-full p-3 border border-slate-300 rounded-xl text-center text-lg tracking-widest focus:ring-2 focus:ring-blue-500 outline-none">
+        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3 rounded-xl transition shadow-sm">Entrar</button>
+      </form>
+      <p id="login-error" class="text-xs text-red-500 font-semibold hidden">Contraseña incorrecta.</p>
+    </div>
+  </div>
+
+  <!-- Modal Edición de Contratación -->
+  <div id="modal-editar" class="fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-50 flex items-center justify-center p-4 hidden">
+    <div class="bg-white rounded-2xl shadow-xl max-w-2xl w-full p-6 space-y-4 max-h-[90vh] overflow-y-auto">
+      <div class="flex justify-between items-center border-b pb-3">
+        <h3 class="text-lg font-bold text-slate-800">Editar Contratación</h3>
+        <button onclick="cerrarModalEditar()" class="text-slate-400 hover:text-slate-600 font-bold">✕</button>
+      </div>
+      <form id="form-editar-contratacion" class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+        <input type="hidden" id="edit-id">
+        <div>
+          <label class="font-semibold text-slate-600">Cliente</label>
+          <input type="text" id="edit-cliente" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600">Teléfono</label>
+          <input type="tel" id="edit-telefono" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600">Fecha Contratación</label>
+          <input type="date" id="edit-fecha-contratacion" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600">Fecha Evento</label>
+          <input type="date" id="edit-fecha-evento" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600">Fecha Entrega</label>
+          <input type="date" id="edit-fecha-entrega" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600">Tipo de Evento</label>
+          <input type="text" id="edit-tipo-evento" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600">Lugar del Evento</label>
+          <input type="text" id="edit-lugar" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600">Tipo de Contratación / Paquete</label>
+          <input type="text" id="edit-paquete-nombre" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600">Monto Total ($)</label>
+          <input type="number" id="edit-monto-total" step="0.01" min="0" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div>
+          <label class="font-semibold text-slate-600">Abono ($)</label>
+          <input type="number" id="edit-abono" step="0.01" min="0" required class="w-full p-2 border rounded-lg">
+        </div>
+        <div class="md:col-span-2 flex gap-2 pt-3">
+          <button type="submit" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-xl font-bold">Guardar Cambios</button>
+          <button type="button" onclick="cerrarModalEditar()" class="bg-slate-200 text-slate-700 px-4 py-2 rounded-xl font-bold">Cancelar</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Contenido Principal -->
+  <div id="app-content" class="max-w-6xl mx-auto space-y-6 hidden">
+    
+    <header class="text-center py-5 bg-slate-900 text-white rounded-2xl shadow-md relative px-4">
+      <h1 class="text-2xl md:text-3xl font-bold">Sistema de Gestión y Finanzas</h1>
+      <button id="btn-logout" class="sm:absolute sm:right-4 sm:top-1/2 sm:-translate-y-1/2 mt-3 sm:mt-0 bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-medium border border-slate-700">🔒 Salir</button>
+    </header>
+
+    <nav class="flex flex-col sm:flex-row gap-3 justify-center">
+      <button id="btn-nav-mesas" onclick="cambiarModulo('mesas')" class="flex-1 py-4 px-6 rounded-2xl font-bold text-sm transition border bg-white text-slate-600 border-slate-200">📸 Evento de Mesas</button>
+      <button id="btn-nav-paquetes" onclick="cambiarModulo('paquetes')" class="flex-1 py-4 px-6 rounded-2xl font-bold text-sm transition border bg-purple-600 text-white border-purple-600">🎉 Paquetes Foto y Video</button>
+    </nav>
+
+    <!-- MÓDULO 1: MESAS -->
+    <main id="modulo-mesas" class="space-y-6 hidden">
+      <div class="bg-white rounded-2xl shadow-sm border p-5 space-y-6">
+        <section class="border-b pb-5">
+          <h3 class="text-md font-bold mb-3 text-slate-700">1.1 Configurar Integrantes e Impresiones (%)</h3>
+          <form id="form-rubro" class="flex flex-col sm:flex-row gap-3 mb-4">
+            <input type="text" id="rubro-nombre" placeholder="Nombre" required class="flex-1 p-2.5 border rounded-xl text-sm">
+            <div class="flex gap-2">
+              <input type="number" id="rubro-porcentaje" placeholder="%" min="0.1" max="100" step="0.1" required class="w-24 p-2.5 border rounded-xl text-sm">
+              <button type="submit" class="bg-blue-600 text-white px-5 py-2.5 rounded-xl font-medium text-sm">Agregar</button>
+            </div>
+          </form>
+          <div id="lista-rubros" class="space-y-2 mb-3"></div>
+          <div class="flex justify-between items-center text-xs font-medium border-t pt-3">
+            <div>Restante: <span id="restante-porcentaje" class="font-bold text-blue-600">100%</span></div>
+            <div>Suma Total: <span id="total-porcentaje" class="font-bold text-slate-700">0%</span></div>
+          </div>
+        </section>
+
+        <section class="border-b pb-5">
+          <h3 class="text-md font-bold mb-3 text-slate-700">1.2 Registrar Venta Directa / Fotos</h3>
+          <form id="form-evento" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <input type="date" id="evento-fecha" required class="p-2.5 border rounded-xl text-sm">
+            <input type="text" id="evento-nombre" placeholder="Cliente / Descripción" required class="p-2.5 border rounded-xl text-sm">
+            <input type="number" id="evento-fotos" placeholder="Fotos ($10 c/u)" min="0" value="0" required class="p-2.5 border rounded-xl text-sm">
+            <input type="number" id="evento-monto" placeholder="Total Cobrado ($)" step="0.01" min="0" required class="p-2.5 border rounded-xl text-sm">
+            <button type="submit" class="md:col-span-2 lg:col-span-4 bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm">Guardar Venta</button>
+          </form>
+        </section>
+
+        <section>
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mb-3">
+            <h3 class="text-md font-bold text-slate-700">1.3 Historial Mesas</h3>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button id="btn-excel" class="bg-slate-800 text-white px-3 py-2 rounded-xl text-xs">Descargar Excel</button>
+              <button id="btn-limpiar-mesas" class="bg-red-100 text-red-700 px-3 py-2 rounded-xl text-xs font-semibold">🗑️ Limpiar Historial</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table id="tabla-historial" class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-slate-100 border-b"><th class="p-2.5">Fecha</th><th class="p-2.5">Cliente</th><th class="p-2.5">Total</th><th class="p-2.5">Impresión</th><th class="p-2.5">Neto</th><th class="p-2.5">Desglose</th><th class="p-2.5">Restante</th></tr>
+              </thead>
+              <tbody id="tbody-historial" class="divide-y"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+    </main>
+
+    <!-- MÓDULO 2: PAQUETES -->
+    <main id="modulo-paquetes" class="space-y-6">
+      <div class="bg-white rounded-2xl shadow-sm border p-5 md:p-6 space-y-6">
+
+        <!-- Catálogo de Paquetes Editable -->
+        <section class="border-b pb-5">
+          <h3 class="text-md font-bold mb-3 text-slate-700">2.1 Catálogo de Paquetes de Contratación</h3>
+          <form id="form-catalogo-paquete" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+            <input type="text" id="cat-nombre" placeholder="Nombre Paquete (Ej. Paquete 1)" required class="p-2.5 border rounded-xl text-sm">
+            <input type="number" id="cat-precio" placeholder="Precio ($)" step="0.01" min="0" required class="p-2.5 border rounded-xl text-sm">
+            <input type="text" id="cat-incluye" placeholder="¿Qué incluye? (Ej. Foto, Video, Álbum)" required class="p-2.5 border rounded-xl text-sm">
+            <button type="submit" class="sm:col-span-3 bg-purple-600 hover:bg-purple-700 text-white py-2 rounded-xl font-bold text-sm">Guardar / Añadir Paquete</button>
+          </form>
+          <div id="lista-catalogo-paquetes" class="grid grid-cols-1 md:grid-cols-3 gap-3"></div>
+        </section>
+
+        <!-- Configuración Porcentual en Tiempo Real -->
+        <section class="border-b pb-5">
+          <h3 class="text-md font-bold mb-3 text-slate-700">2.2 Desglose Porcentual del Dinero Ingresado (%)</h3>
+          <form id="form-rubro-paquete" class="flex flex-col sm:flex-row gap-3 mb-4">
+            <input type="text" id="rubro-paquete-nombre" placeholder="Concepto (Ej. Material 5%, Viáticos 10%)" required class="flex-1 p-2.5 border rounded-xl text-sm">
+            <div class="flex gap-2">
+              <input type="number" id="rubro-paquete-porcentaje" placeholder="%" min="0.1" max="100" step="0.1" required class="w-24 p-2.5 border rounded-xl text-sm">
+              <button type="submit" class="bg-purple-600 text-white px-5 py-2.5 rounded-xl font-medium text-sm">Agregar</button>
+            </div>
+          </form>
+          <div id="lista-rubros-paquete" class="space-y-2 mb-3"></div>
+          <div class="flex justify-between items-center text-xs font-medium border-t pt-3">
+            <div>Restante Porcentual Libre: <span id="restante-paquete-porcentaje" class="font-bold text-purple-600">100%</span></div>
+            <div>Suma Asignada: <span id="total-paquete-porcentaje" class="font-bold text-slate-700">0%</span></div>
+          </div>
+        </section>
+
+        <!-- Registro de Evento con Calculadora -->
+        <section class="border-b pb-5">
+          <h3 class="text-md font-bold mb-3 text-slate-700">2.3 Registrar Nueva Contratación de Evento</h3>
+          
+          <form id="form-contratacion" class="space-y-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
+              <div>
+                <label class="font-semibold text-slate-500">Nombre del Cliente</label>
+                <input type="text" id="paquete-cliente" required class="w-full p-2.5 border rounded-xl text-sm">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-500">Teléfono Cliente</label>
+                <input type="tel" id="paquete-telefono" required class="w-full p-2.5 border rounded-xl text-sm">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-500">Tipo de Evento (Boda, XV, etc.)</label>
+                <input type="text" id="paquete-tipo-evento" required class="w-full p-2.5 border rounded-xl text-sm">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-500">Lugar del Evento</label>
+                <input type="text" id="paquete-lugar" required class="w-full p-2.5 border rounded-xl text-sm">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-500">Fecha de Contratación</label>
+                <input type="date" id="paquete-fecha-contratacion" required class="w-full p-2.5 border rounded-xl text-sm">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-500">Fecha del Evento</label>
+                <input type="date" id="paquete-fecha-evento" required class="w-full p-2.5 border rounded-xl text-sm">
+              </div>
+              <div>
+                <label class="font-semibold text-slate-500">Fecha Entrega Paquete</label>
+                <input type="date" id="paquete-fecha-entrega" required class="w-full p-2.5 border rounded-xl text-sm">
+              </div>
+              <div class="md:col-span-2">
+                <label class="font-semibold text-slate-500">Seleccionar Paquete / Tipo Contratación</label>
+                <select id="paquete-seleccion" onchange="seleccionarPaqueteAuto()" class="w-full p-2.5 border rounded-xl text-sm bg-white">
+                  <option value="">-- Seleccionar o escribir manual --</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- Calculadora y Reparto en Tiempo Real -->
+            <div class="bg-purple-50 p-4 rounded-2xl border border-purple-200 space-y-3">
+              <div class="font-bold text-purple-900 text-sm">⚡ Simulación y Cálculo Financiero en Tiempo Real:</div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div>
+                  <label class="text-xs font-bold text-purple-900">Monto Total Paquete ($)</label>
+                  <input type="number" id="paquete-monto" step="0.01" min="0" oninput="calcularEnVivo()" required class="w-full p-2.5 border rounded-xl font-bold text-slate-800 bg-white">
+                </div>
+                <div>
+                  <label class="text-xs font-bold text-purple-900">Abono Ingresado ($)</label>
+                  <input type="number" id="paquete-abono" step="0.01" min="0" oninput="calcularEnVivo()" required class="w-full p-2.5 border rounded-xl font-bold text-emerald-700 bg-white">
+                </div>
+                <div>
+                  <label class="text-xs font-bold text-purple-900">Monto Restante por Cobrar ($)</label>
+                  <div id="calculo-restante-pantalla" class="p-2.5 bg-white border border-purple-200 rounded-xl font-bold text-red-600 text-base">$0.00</div>
+                </div>
+              </div>
+
+              <div class="bg-white p-3 rounded-xl border border-purple-100">
+                <div class="text-xs font-bold text-slate-600 mb-2">Reparto Porcentual del Abono Ingresado ($<span id="monto-repartir-text">0.00</span>):</div>
+                <div id="vista-previa-desglose" class="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs text-slate-600">
+                  <span class="italic text-slate-400">Ingresa valores para ver la división...</span>
+                </div>
+              </div>
+            </div>
+
+            <button type="submit" class="w-full bg-purple-600 hover:bg-purple-700 text-white py-3 rounded-xl font-bold text-sm">Guardar Evento en Agenda</button>
+          </form>
+        </section>
+
+        <!-- Registros y Tabla Completa -->
+        <section>
+          <div class="flex flex-col sm:flex-row justify-between items-center gap-2 mb-3">
+            <h3 class="text-md font-bold text-slate-700">2.4 Agenda General de Eventos de Foto y Video</h3>
+            <div class="flex gap-2 w-full sm:w-auto">
+              <button id="btn-excel-paquetes" class="bg-purple-900 text-white px-3 py-2 rounded-xl text-xs">Exportar Excel</button>
+              <button id="btn-limpiar-paquetes" class="bg-red-100 text-red-700 px-3 py-2 rounded-xl text-xs font-semibold">🗑️ Limpiar Historial</button>
+            </div>
+          </div>
+          <div class="overflow-x-auto">
+            <table id="tabla-paquetes" class="w-full text-left border-collapse text-sm">
+              <thead>
+                <tr class="bg-slate-100 border-b text-xs">
+                  <th class="p-2">Cliente / Teléfono</th>
+                  <th class="p-2">Fechas (Contratación/Evento/Entrega)</th>
+                  <th class="p-2">Lugar / Evento</th>
+                  <th class="p-2">Paquete Contratado</th>
+                  <th class="p-2">Estado Financiero</th>
+                  <th class="p-2">Desglose Abono</th>
+                  <th class="p-2">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="tbody-paquetes" class="divide-y"></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </main>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+
+  <script>
+    function cambiarModulo(modulo) {
+      const btnMesas = document.getElementById('btn-nav-mesas');
+      const btnPaquetes = document.getElementById('btn-nav-paquetes');
+      const moduloMesas = document.getElementById('modulo-mesas');
+      const moduloPaquetes = document.getElementById('modulo-paquetes');
+
+      if (modulo === 'mesas') {
+        moduloMesas.classList.remove('hidden');
+        moduloPaquetes.classList.add('hidden');
+        btnMesas.className = "flex-1 py-4 px-6 rounded-2xl font-bold text-sm border bg-blue-600 text-white border-blue-600";
+        btnPaquetes.className = "flex-1 py-4 px-6 rounded-2xl font-bold text-sm border bg-white text-slate-600 border-slate-200";
+      } else {
+        moduloMesas.classList.add('hidden');
+        moduloPaquetes.classList.remove('hidden');
+        btnPaquetes.className = "flex-1 py-4 px-6 rounded-2xl font-bold text-sm border bg-purple-600 text-white border-purple-600";
+        btnMesas.className = "flex-1 py-4 px-6 rounded-2xl font-bold text-sm border bg-white text-slate-600 border-slate-200";
+      }
+    }
+
+    const CLAVE_CORRECTA = "1234";
+    const modalLogin = document.getElementById('modal-login');
+    const appContent = document.getElementById('app-content');
+    const formLogin = document.getElementById('form-login');
+    const claveInput = document.getElementById('clave-input');
+    const loginError = document.getElementById('login-error');
+    const btnLogout = document.getElementById('btn-logout');
+
+    if (localStorage.getItem('auth_finanzas') === 'true') mostrarApp();
+
+    formLogin.addEventListener('submit', (e) => {
+      e.preventDefault();
+      if (claveInput.value === CLAVE_CORRECTA) {
+        localStorage.setItem('auth_finanzas', 'true');
+        mostrarApp();
+      } else {
+        loginError.classList.remove('hidden');
+        claveInput.value = '';
+      }
+    });
+
+    btnLogout.addEventListener('click', () => {
+      localStorage.removeItem('auth_finanzas');
+      location.reload();
+    });
+
+    function mostrarApp() {
+      modalLogin.classList.add('hidden');
+      appContent.classList.remove('hidden');
+    }
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyDbC-IZuXKHhDANIZTG3LVhQuYIE-M5V_8",
+      authDomain: "control-finanzas-fotogarher.firebaseapp.com",
+      databaseURL: "https://control-finanzas-fotogarher-default-rtdb.firebaseio.com",
+      projectId: "control-finanzas-fotogarher",
+      storageBucket: "control-finanzas-fotogarher.firebasestorage.app",
+      messagingSenderId: "125373585464",
+      appId: "1:125373585464:web:25a104f127a0ce22f56ecd"
+    };
+
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    const rubrosRef = db.ref('rubros');
+    const eventosRef = db.ref('eventos');
+    const catalogoRef = db.ref('catalogo_paquetes');
+    const rubrosPaqueteRef = db.ref('rubros_paquete');
+    const contratacionesRef = db.ref('contrataciones');
+
+    let rubrosActuales = {};
+    let rubrosPaqueteActuales = {};
+    let catalogoPaquetesActuales = {};
+    let contratacionesActuales = {};
+
+    // MÓDULO MESAS
+    rubrosRef.on('value', (s) => { rubrosActuales = s.val() || {}; renderRubros(); });
+    eventosRef.on('value', (s) => renderHistorial(s.val() || {}));
+
+    function renderRubros() {
+      const contenedor = document.getElementById('lista-rubros');
+      contenedor.innerHTML = '';
+      let suma = 0;
+      Object.keys(rubrosActuales).forEach(k => {
+        const item = rubrosActuales[k];
+        suma += parseFloat(item.porcentaje);
+        contenedor.innerHTML += `<div class="flex justify-between items-center bg-slate-50 p-2 rounded-xl border text-sm"><span><strong>${item.nombre}:</strong> ${item.porcentaje}%</span><button onclick="eliminarRubro('${k}')" class="text-red-500 font-bold text-xs">Eliminar</button></div>`;
+      });
+      document.getElementById('total-porcentaje').innerText = suma.toFixed(1) + '%';
+      document.getElementById('restante-porcentaje').innerText = (100 - suma).toFixed(1) + '%';
+    }
+
+    document.getElementById('form-rubro').addEventListener('submit', (e) => {
+      e.preventDefault();
+      rubrosRef.push({ nombre: document.getElementById('rubro-nombre').value.trim(), porcentaje: parseFloat(document.getElementById('rubro-porcentaje').value) }, () => document.getElementById('form-rubro').reset());
+    });
+    function eliminarRubro(k) { rubrosRef.child(k).remove(); }
+
+    document.getElementById('form-evento').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fecha = document.getElementById('evento-fecha').value;
+      const nombre = document.getElementById('evento-nombre').value.trim();
+      const fotos = parseInt(document.getElementById('evento-fotos').value) || 0;
+      const montoTotal = parseFloat(document.getElementById('evento-monto').value);
+      const costoImpresion = fotos * 10;
+      const montoNeto = montoTotal - costoImpresion;
+
+      const desglose = {};
+      let totalDesglosado = 0;
+      Object.keys(rubrosActuales).forEach(k => {
+        const r = rubrosActuales[k];
+        const calc = (montoNeto * (r.porcentaje / 100));
+        totalDesglosado += calc;
+        desglose[r.nombre] = `$${calc.toFixed(2)} (${r.porcentaje}%)`;
+      });
+
+      eventosRef.push({ fecha, nombre, fotos, costoImpresion, montoTotal, montoNeto: montoNeto.toFixed(2), desglose, restante: (montoNeto - totalDesglosado).toFixed(2) }, () => {
+        document.getElementById('form-evento').reset();
+        document.getElementById('evento-fotos').value = 0;
+      });
+    });
+
+    function renderHistorial(eventos) {
+      const tbody = document.getElementById('tbody-historial');
+      tbody.innerHTML = '';
+      const keys = Object.keys(eventos);
+      if (!keys.length) return tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-xs text-slate-400">Sin registros.</td></tr>';
+      keys.reverse().forEach(k => {
+        const ev = eventos[k];
+        let dHtml = '<ul class="text-xs space-y-0.5">';
+        if (ev.desglose) Object.keys(ev.desglose).forEach(r => dHtml += `<li><strong>${r}:</strong> ${ev.desglose[r]}</li>`);
+        dHtml += '</ul>';
+        tbody.innerHTML += `<tr class="border-b"><td class="p-2">${ev.fecha}</td><td class="p-2 font-semibold">${ev.nombre}</td><td class="p-2 font-bold text-emerald-600">$${parseFloat(ev.montoTotal).toFixed(2)}</td><td class="p-2 text-xs">$${parseFloat(ev.costoImpresion).toFixed(2)} (${ev.fotos} fotos)</td><td class="p-2 font-bold">$${parseFloat(ev.montoNeto).toFixed(2)}</td><td class="p-2">${dHtml}</td><td class="p-2 font-bold text-blue-600">$${parseFloat(ev.restante).toFixed(2)}</td></tr>`;
+      });
+    }
+
+    document.getElementById('btn-excel').addEventListener('click', () => {
+      const wb = XLSX.utils.table_to_book(document.getElementById('tabla-historial'), { sheet: "Evento_Mesas" });
+      XLSX.writeFile(wb, `Reporte_Mesas_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+    document.getElementById('btn-limpiar-mesas').addEventListener('click', () => { if (confirm('¿Borrar todo el historial de mesas?')) eventosRef.remove(); });
+
+    // CATÁLOGO DE PAQUETES
+    catalogoRef.on('value', (s) => {
+      catalogoPaquetesActuales = s.val() || {};
+      renderCatalogoPaquetes();
+    });
+
+    function renderCatalogoPaquetes() {
+      const contenedor = document.getElementById('lista-catalogo-paquetes');
+      const select = document.getElementById('paquete-seleccion');
+      contenedor.innerHTML = '';
+      select.innerHTML = '<option value="">-- Seleccionar o escribir manual --</option>';
+
+      Object.keys(catalogoPaquetesActuales).forEach(k => {
+        const p = catalogoPaquetesActuales[k];
+        contenedor.innerHTML += `
+          <div class="bg-purple-50 p-3 rounded-xl border border-purple-100 flex flex-col justify-between">
+            <div>
+              <div class="font-bold text-purple-900 text-sm">${p.nombre}</div>
+              <div class="text-xs text-slate-600 font-semibold mb-1">$${parseFloat(p.precio).toFixed(2)}</div>
+              <div class="text-xs text-slate-500">${p.incluye}</div>
+            </div>
+            <button onclick="eliminarPaqueteCatalogo('${k}')" class="text-red-500 text-xs font-bold mt-2 text-right">Eliminar</button>
+          </div>
+        `;
+        select.innerHTML += `<option value="${k}">${p.nombre} - $${p.precio}</option>`;
+      });
+    }
+
+    document.getElementById('form-catalogo-paquete').addEventListener('submit', (e) => {
+      e.preventDefault();
+      catalogoRef.push({
+        nombre: document.getElementById('cat-nombre').value.trim(),
+        precio: parseFloat(document.getElementById('cat-precio').value),
+        incluye: document.getElementById('cat-incluye').value.trim()
+      }, () => document.getElementById('form-catalogo-paquete').reset());
+    });
+
+    function eliminarPaqueteCatalogo(k) { catalogoRef.child(k).remove(); }
+
+    function seleccionarPaqueteAuto() {
+      const id = document.getElementById('paquete-seleccion').value;
+      if (id && catalogoPaquetesActuales[id]) {
+        document.getElementById('paquete-monto').value = catalogoPaquetesActuales[id].precio;
+        calcularEnVivo();
+      }
+    }
+
+    // RUBROS DE PAQUETE
+    rubrosPaqueteRef.on('value', (s) => {
+      rubrosPaqueteActuales = s.val() || {};
+      renderRubrosPaquete();
+      calcularEnVivo();
+    });
+
+    function renderRubrosPaquete() {
+      const contenedor = document.getElementById('lista-rubros-paquete');
+      contenedor.innerHTML = '';
+      let suma = 0;
+      Object.keys(rubrosPaqueteActuales).forEach(k => {
+        const item = rubrosPaqueteActuales[k];
+        suma += parseFloat(item.porcentaje);
+        contenedor.innerHTML += `<div class="flex justify-between items-center bg-purple-50 p-2 rounded-xl border border-purple-100 text-sm"><span><strong>${item.nombre}:</strong> ${item.porcentaje}%</span><button onclick="eliminarRubroPaquete('${k}')" class="text-red-500 font-bold text-xs">Eliminar</button></div>`;
+      });
+      document.getElementById('total-paquete-porcentaje').innerText = suma.toFixed(1) + '%';
+      document.getElementById('restante-paquete-porcentaje').innerText = (100 - suma).toFixed(1) + '%';
+    }
+
+    document.getElementById('form-rubro-paquete').addEventListener('submit', (e) => {
+      e.preventDefault();
+      rubrosPaqueteRef.push({ nombre: document.getElementById('rubro-paquete-nombre').value.trim(), porcentaje: parseFloat(document.getElementById('rubro-paquete-porcentaje').value) }, () => document.getElementById('form-rubro-paquete').reset());
+    });
+    function eliminarRubroPaquete(k) { rubrosPaqueteRef.child(k).remove(); }
+
+    function calcularEnVivo() {
+      const montoTotal = parseFloat(document.getElementById('paquete-monto').value) || 0;
+      const abono = parseFloat(document.getElementById('paquete-abono').value) || 0;
+      const resta = Math.max(0, montoTotal - abono);
+      document.getElementById('calculo-restante-pantalla').innerText = `$${resta.toFixed(2)}`;
+      document.getElementById('monto-repartir-text').innerText = abono.toFixed(2);
+
+      const contenedor = document.getElementById('vista-previa-desglose');
+      contenedor.innerHTML = '';
+
+      if (!Object.keys(rubrosPaqueteActuales).length || abono <= 0) {
+        return contenedor.innerHTML = '<span class="italic text-slate-400">Sin reparto asignado...</span>';
+      }
+
+      Object.keys(rubrosPaqueteActuales).forEach(k => {
+        const r = rubrosPaqueteActuales[k];
+        const calc = (abono * (r.porcentaje / 100));
+        contenedor.innerHTML += `<div class="bg-purple-100/50 p-2 rounded-lg border border-purple-200"><div class="font-bold text-purple-900">${r.nombre} (${r.porcentaje}%)</div><div class="text-sm font-extrabold text-slate-800">$${calc.toFixed(2)}</div></div>`;
+      });
+    }
+
+    // REGISTRO DE CONTRATACIÓN
+    document.getElementById('form-contratacion').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const cliente = document.getElementById('paquete-cliente').value.trim();
+      const telefono = document.getElementById('paquete-telefono').value.trim();
+      const tipoEvento = document.getElementById('paquete-tipo-evento').value.trim();
+      const lugar = document.getElementById('paquete-lugar').value.trim();
+      const fechaContratacion = document.getElementById('paquete-fecha-contratacion').value;
+      const fechaEvento = document.getElementById('paquete-fecha-evento').value;
+      const fechaEntrega = document.getElementById('paquete-fecha-entrega').value;
+      
+      const paqueteId = document.getElementById('paquete-seleccion').value;
+      const paqueteNombre = paqueteId && catalogoPaquetesActuales[paqueteId] ? catalogoPaquetesActuales[paqueteId].nombre : "Personalizado / Especial";
+
+      const montoTotal = parseFloat(document.getElementById('paquete-monto').value) || 0;
+      const abono = parseFloat(document.getElementById('paquete-abono').value) || 0;
+      const restantePago = Math.max(0, montoTotal - abono).toFixed(2);
+      const estatusPago = (montoTotal > 0 && abono >= montoTotal) ? 'Liquidado' : 'Pendiente';
+
+      const desglose = {};
+      Object.keys(rubrosPaqueteActuales).forEach(k => {
+        const r = rubrosPaqueteActuales[k];
+        const calc = (abono * (r.porcentaje / 100));
+        desglose[r.nombre] = `$${calc.toFixed(2)} (${r.porcentaje}%)`;
+      });
+
+      contratacionesRef.push({
+        cliente, telefono, tipoEvento, lugar, fechaContratacion, fechaEvento, fechaEntrega, paqueteNombre,
+        montoTotal: montoTotal.toFixed(2), abono: abono.toFixed(2), restantePago, estatusPago, desglose
+      }, () => {
+        document.getElementById('form-contratacion').reset();
+        calcularEnVivo();
+      });
+    });
+
+    contratacionesRef.on('value', (s) => {
+      contratacionesActuales = s.val() || {};
+      renderContrataciones(contratacionesActuales);
+    });
+
+    function renderContrataciones(data) {
+      const tbody = document.getElementById('tbody-paquetes');
+      tbody.innerHTML = '';
+      const keys = Object.keys(data);
+      if (!keys.length) return tbody.innerHTML = '<tr><td colspan="7" class="p-3 text-center text-xs text-slate-400">Sin contrataciones.</td></tr>';
+
+      keys.reverse().forEach(k => {
+        const c = data[k];
+        let dHtml = '<ul class="text-xs space-y-0.5">';
+        if (c.desglose) Object.keys(c.desglose).forEach(r => dHtml += `<li><strong>${r}:</strong> ${c.desglose[r]}</li>`);
+        dHtml += '</ul>';
+
+        let badgePago = c.estatusPago === 'Liquidado' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800';
+
+        tbody.innerHTML += `
+          <tr class="border-b text-xs">
+            <td class="p-2"><div class="font-bold">${c.cliente}</div><div>📞 ${c.telefono}</div></td>
+            <td class="p-2">
+              <div>📝 Contratación: ${c.fechaContratacion}</div>
+              <div>🎉 Evento: ${c.fechaEvento}</div>
+              <div>📦 Entrega: ${c.fechaEntrega}</div>
+            </td>
+            <td class="p-2"><div>📍 ${c.lugar}</div><div>🎈 ${c.tipoEvento}</div></td>
+            <td class="p-2 font-semibold text-purple-800">${c.paqueteNombre}</td>
+            <td class="p-2 space-y-1">
+              <span class="px-2 py-0.5 rounded-full text-[10px] font-bold ${badgePago}">${c.estatusPago}</span>
+              <div>Total: $${c.montoTotal}</div>
+              <div>Abono: $${c.abono}</div>
+              <div class="font-bold text-red-600">Resta: $${c.restantePago}</div>
+            </td>
+            <td class="p-2">${dHtml}</td>
+            <td class="p-2 space-x-1">
+              <button onclick="abrirModalEditar('${k}')" class="text-blue-600 font-bold">Editar</button>
+              <button onclick="eliminarContratacion('${k}')" class="text-red-500 font-bold">Eliminar</button>
+            </td>
+          </tr>
+        `;
+      });
+    }
+
+    function abrirModalEditar(k) {
+      const c = contratacionesActuales[k];
+      if (!c) return;
+      document.getElementById('edit-id').value = k;
+      document.getElementById('edit-cliente').value = c.cliente;
+      document.getElementById('edit-telefono').value = c.telefono;
+      document.getElementById('edit-fecha-contratacion').value = c.fechaContratacion;
+      document.getElementById('edit-fecha-evento').value = c.fechaEvento;
+      document.getElementById('edit-fecha-entrega').value = c.fechaEntrega;
+      document.getElementById('edit-tipo-evento').value = c.tipoEvento;
+      document.getElementById('edit-lugar').value = c.lugar;
+      document.getElementById('edit-paquete-nombre').value = c.paqueteNombre;
+      document.getElementById('edit-monto-total').value = c.montoTotal;
+      document.getElementById('edit-abono').value = c.abono;
+      document.getElementById('modal-editar').classList.remove('hidden');
+    }
+
+    function cerrarModalEditar() {
+      document.getElementById('modal-editar').classList.add('hidden');
+    }
+
+    document.getElementById('form-editar-contratacion').addEventListener('submit', (e) => {
+      e.preventDefault();
+      const k = document.getElementById('edit-id').value;
+      const montoTotal = parseFloat(document.getElementById('edit-monto-total').value) || 0;
+      const abono = parseFloat(document.getElementById('edit-abono').value) || 0;
+      const restantePago = Math.max(0, montoTotal - abono).toFixed(2);
+      const estatusPago = (montoTotal > 0 && abono >= montoTotal) ? 'Liquidado' : 'Pendiente';
+
+      const desglose = {};
+      Object.keys(rubrosPaqueteActuales).forEach(rk => {
+        const r = rubrosPaqueteActuales[rk];
+        const calc = (abono * (r.porcentaje / 100));
+        desglose[r.nombre] = `$${calc.toFixed(2)} (${r.porcentaje}%)`;
+      });
+
+      contratacionesRef.child(k).update({
+        cliente: document.getElementById('edit-cliente').value.trim(),
+        telefono: document.getElementById('edit-telefono').value.trim(),
+        fechaContratacion: document.getElementById('edit-fecha-contratacion').value,
+        fechaEvento: document.getElementById('edit-fecha-evento').value,
+        fechaEntrega: document.getElementById('edit-fecha-entrega').value,
+        tipoEvento: document.getElementById('edit-tipo-evento').value.trim(),
+        lugar: document.getElementById('edit-lugar').value.trim(),
+        paqueteNombre: document.getElementById('edit-paquete-nombre').value.trim(),
+        montoTotal: montoTotal.toFixed(2),
+        abono: abono.toFixed(2),
+        restantePago, estatusPago, desglose
+      }, () => cerrarModalEditar());
+    });
+
+    function eliminarContratacion(k) { if (confirm('¿Eliminar contratación?')) contratacionesRef.child(k).remove(); }
+
+    document.getElementById('btn-excel-paquetes').addEventListener('click', () => {
+      const wb = XLSX.utils.table_to_book(document.getElementById('tabla-paquetes'), { sheet: "Paquetes_Eventos" });
+      XLSX.writeFile(wb, `Reporte_Paquetes_${new Date().toISOString().slice(0,10)}.xlsx`);
+    });
+    document.getElementById('btn-limpiar-paquetes').addEventListener('click', () => { if (confirm('¿Borrar todo el historial de paquetes?')) contratacionesRef.remove(); });
+  </script>
+</body>
+</html>
