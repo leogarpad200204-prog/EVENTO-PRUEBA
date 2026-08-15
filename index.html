@@ -1,3 +1,4 @@
+código de panel evento 2
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -18,7 +19,7 @@
     <header class="bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
       <div>
         <h1 class="text-2xl font-bold text-slate-900">Sistema de Contrataciones</h1>
-        <p class="text-sm text-slate-500">Control de paquetes, abonos acumulativos y saldos pendientes.</p>
+        <p class="text-sm text-slate-500">Control de paquetes, abonos en abono parcial y saldos pendientes.</p>
       </div>
     </header>
 
@@ -78,7 +79,7 @@
             </div>
           </div>
 
-          <!-- Previsualización de Restante y Estatus -->
+          <!-- Previsualización de Restante y Desglose -->
           <div class="bg-slate-50 p-3 rounded-xl border border-slate-200 flex justify-between items-center text-xs">
             <div>
               <span class="text-slate-500">Saldo Restante:</span>
@@ -108,7 +109,7 @@
         </form>
 
         <div id="lista-rubros" class="space-y-2 text-xs max-h-48 overflow-y-auto border-t pt-2">
-          <!-- Renderizado en tiempo real -->
+          <!-- Se llena en tiempo real -->
         </div>
       </div>
 
@@ -192,53 +193,31 @@
           </div>
         </div>
 
-        <!-- Estado financiero rápido en modal -->
-        <div class="grid grid-cols-2 gap-3 bg-slate-50 p-3 rounded-xl border text-center">
-          <div>
-            <span class="text-slate-500 block">Total Acumulado</span>
-            <span id="edit-display-abonado" class="font-bold text-emerald-600 text-sm">$0.00</span>
-          </div>
-          <div>
-            <span class="text-slate-500 block">Saldo Restante</span>
-            <span id="edit-display-restante" class="font-bold text-red-600 text-sm">$0.00</span>
-          </div>
-        </div>
-
-        <!-- Control de Abonos Acumulativos -->
+        <!-- Sección de Control de Abonos -->
         <div class="bg-purple-50 p-4 rounded-xl border border-purple-200 space-y-3">
-          <div id="seccion-nuevo-abono" class="space-y-3">
-            <div class="font-bold text-purple-900 text-sm">Agregar Nuevo Abono</div>
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label class="font-semibold text-slate-600">Nuevo Pago / Abono ($)</label>
-                <input type="number" id="edit-nuevo-abono" step="0.01" min="0" placeholder="Ej. 1500" class="w-full p-2 border rounded-lg bg-white font-bold text-emerald-700">
-              </div>
-              <div>
-                <label class="font-semibold text-slate-600">Fecha del Pago</label>
-                <input type="date" id="edit-fecha-nuevo-abono" class="w-full p-2 border rounded-lg bg-white">
-              </div>
+          <div class="font-bold text-purple-900 text-sm">Registrar Nuevo Abono</div>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label class="font-semibold text-slate-600">Nuevo Pago / Abono ($)</label>
+              <input type="number" id="edit-nuevo-abono" step="0.01" min="0" placeholder="Ej. 1500" class="w-full p-2 border rounded-lg bg-white font-bold text-emerald-700">
             </div>
-          </div>
-
-          <div id="mensaje-liquidado" class="hidden bg-emerald-100 border border-emerald-300 text-emerald-800 p-3 rounded-lg text-center font-bold">
-            ✓ Este paquete se encuentra completamente LIQUIDADO.
+            <div>
+              <label class="font-semibold text-slate-600">Fecha del Pago</label>
+              <input type="date" id="edit-fecha-nuevo-abono" class="w-full p-2 border rounded-lg bg-white">
+            </div>
           </div>
           
           <div class="border-t border-purple-200 pt-3">
             <div class="font-bold text-slate-700 mb-1">Historial de Pagos Registrados:</div>
             <div id="edit-historial-abonos" class="space-y-1 max-h-32 overflow-y-auto text-slate-600 bg-white p-2 rounded-lg border">
-              <!-- Se construye dinámicamente -->
+              <!-- Se construye al abrir el modal -->
             </div>
           </div>
         </div>
 
         <div class="flex gap-2 pt-2">
-          <button type="submit" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl font-bold transition">
-            Guardar Cambios
-          </button>
-          <button type="button" onclick="cerrarModalEditar()" class="bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold hover:bg-slate-300 transition">
-            Cancelar
-          </button>
+          <button type="submit" class="flex-1 bg-purple-600 hover:bg-purple-700 text-white py-2.5 rounded-xl font-bold">Guardar Cambios y Actualizar Saldo</button>
+          <button type="button" onclick="cerrarModalEditar()" class="bg-slate-200 text-slate-700 px-4 py-2.5 rounded-xl font-bold">Cancelar</button>
         </div>
       </form>
     </div>
@@ -247,7 +226,7 @@
   <!-- JavaScript -->
   <script>
     // -----------------------------------------------------------------
-    // 1. CONFIGURACIÓN DE FIREBASE
+    // 1. CONFIGURACIÓN DE FIREBASE (Reemplaza con tus llaves)
     // -----------------------------------------------------------------
     const firebaseConfig = {
       apiKey: "TU_API_KEY",
@@ -262,7 +241,7 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // Referencias Realtime Database
+    // Referencias
     const contratacionesRef = db.ref('contrataciones');
     const rubrosRef = db.ref('rubros');
     const paquetesRef = db.ref('paquetes');
@@ -273,14 +252,14 @@
     let catalogoPaquetesActuales = {};
 
     // -----------------------------------------------------------------
-    // 2. INICIALIZACIÓN FECHAS
+    // 2. INICIALIZACIÓN DE FECHAS HOY
     // -----------------------------------------------------------------
     const hoy = new Date().toISOString().slice(0, 10);
     document.getElementById('paquete-fecha-contratacion').value = hoy;
     document.getElementById('edit-fecha-nuevo-abono').value = hoy;
 
     // -----------------------------------------------------------------
-    // 3. LISTENERS EN TIEMPO REAL
+    // 3. LISTENERS FIREBASE EN TIEMPO REAL
     // -----------------------------------------------------------------
     rubrosRef.on('value', (snapshot) => {
       rubrosPaqueteActuales = snapshot.val() || {};
@@ -376,7 +355,7 @@
     }
 
     // -----------------------------------------------------------------
-    // 5. CÁLCULOS Y CREACIÓN
+    // 5. LÓGICA DE NEGOCIO Y CALCULOS EN VIVO
     // -----------------------------------------------------------------
     function seleccionarPaqueteCatalogo(id) {
       if (!id || !catalogoPaquetesActuales[id]) return;
@@ -401,6 +380,7 @@
       }
     }
 
+    // Guardar Rubros
     document.getElementById('form-rubro').addEventListener('submit', (e) => {
       e.preventDefault();
       const nombre = document.getElementById('rubro-nombre').value.trim();
@@ -415,6 +395,7 @@
       rubrosRef.child(id).remove();
     }
 
+    // REGISTRAR NUEVA CONTRATACIÓN
     document.getElementById('form-contratacion').addEventListener('submit', (e) => {
       e.preventDefault();
       
@@ -432,6 +413,7 @@
       const montoTotal = parseFloat(document.getElementById('paquete-monto').value) || 0;
       const abonoInicial = parseFloat(document.getElementById('paquete-abono').value) || 0;
 
+      // Crear Historial Inicial
       const historialAbonos = [];
       if (abonoInicial > 0) {
         historialAbonos.push({
@@ -443,6 +425,7 @@
       const restantePago = Math.max(0, montoTotal - abonoInicial).toFixed(2);
       const estatusPago = (montoTotal > 0 && abonoInicial >= montoTotal) ? 'Liquidado' : 'Pendiente';
 
+      // Calcular desglose
       const desglose = {};
       Object.keys(rubrosPaqueteActuales).forEach(k => {
         const r = rubrosPaqueteActuales[k];
@@ -464,7 +447,7 @@
     });
 
     // -----------------------------------------------------------------
-    // 6. GESTIÓN DEL MODAL ACTUALIZADO Y ABONOS ACUMULATIVOS
+    // 6. MANEJO DEL MODAL DE EDICIÓN Y ACUMULACIÓN DE ABONOS
     // -----------------------------------------------------------------
     function abrirModalEditar(k) {
       const c = contratacionesActuales[k];
@@ -484,25 +467,7 @@
       document.getElementById('edit-nuevo-abono').value = '';
       document.getElementById('edit-fecha-nuevo-abono').value = hoy;
 
-      const total = parseFloat(c.montoTotal || 0);
-      const abonado = parseFloat(c.abono || 0);
-      const restante = parseFloat(c.restantePago || 0);
-
-      document.getElementById('edit-display-abonado').textContent = `$${abonado.toFixed(2)}`;
-      document.getElementById('edit-display-restante').textContent = `$${restante.toFixed(2)}`;
-
-      // Ocultar campo de abono si está liquidado
-      const seccionAbono = document.getElementById('seccion-nuevo-abono');
-      const msgLiquidado = document.getElementById('mensaje-liquidado');
-      if (restante <= 0 && total > 0) {
-        seccionAbono.classList.add('hidden');
-        msgLiquidado.classList.remove('hidden');
-      } else {
-        seccionAbono.classList.remove('hidden');
-        msgLiquidado.classList.add('hidden');
-      }
-
-      // Historial de pagos acumulados
+      // Cargar lista de abonos históricos
       const contenedorHistorial = document.getElementById('edit-historial-abonos');
       contenedorHistorial.innerHTML = '';
       
@@ -528,6 +493,7 @@
       document.getElementById('modal-editar').classList.add('hidden');
     }
 
+    // GUARDAR EDICIÓN Y SUMAR NUEVO ABONO
     document.getElementById('form-editar-contratacion').addEventListener('submit', (e) => {
       e.preventDefault();
       const k = document.getElementById('edit-id').value;
@@ -537,11 +503,13 @@
       const nuevoAbonoMonto = parseFloat(document.getElementById('edit-nuevo-abono').value) || 0;
       const nuevoAbonoFecha = document.getElementById('edit-fecha-nuevo-abono').value || hoy;
 
-      let historial = Array.isArray(c.historialAbonos) ? [...c.historialAbonos] : [];
+      // Cargar historial actual o migrar dato simple anterior
+      let historial = c.historialAbonos || [];
       if (!historial.length && parseFloat(c.abono) > 0) {
         historial.push({ monto: parseFloat(c.abono).toFixed(2), fecha: c.fechaContratacion });
       }
 
+      // Agregar el nuevo pago al historial
       if (nuevoAbonoMonto > 0) {
         historial.push({
           monto: nuevoAbonoMonto.toFixed(2),
@@ -549,10 +517,12 @@
         });
       }
 
+      // Calcular la suma acumulada de todos los abonos
       const abonoTotalAcumulado = historial.reduce((sum, item) => sum + parseFloat(item.monto), 0);
       const restantePago = Math.max(0, montoTotal - abonoTotalAcumulado).toFixed(2);
       const estatusPago = (montoTotal > 0 && abonoTotalAcumulado >= montoTotal) ? 'Liquidado' : 'Pendiente';
 
+      // Recalcular desglose sobre el monto total abonado a la fecha
       const desglose = {};
       Object.keys(rubrosPaqueteActuales).forEach(rk => {
         const r = rubrosPaqueteActuales[rk];
@@ -560,6 +530,7 @@
         desglose[r.nombre] = `$${calc.toFixed(2)} (${r.porcentaje}%)`;
       });
 
+      // Actualizar en Firebase
       contratacionesRef.child(k).update({
         cliente: document.getElementById('edit-cliente').value.trim(),
         telefono: document.getElementById('edit-telefono').value.trim(),
