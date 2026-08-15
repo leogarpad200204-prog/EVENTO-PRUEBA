@@ -113,11 +113,12 @@
         </section>
 
         <section class="border-b pb-5">
-          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-2 mb-4">
+          <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-4">
             <div>
               <h3 class="text-md font-bold text-slate-700">1.2 Inventario de Material</h3>
               <p class="text-xs text-slate-500 mt-1">Agrega material cuando recibas existencias nuevas. El sistema conservará el total ingresado y calculará automáticamente lo disponible.</p>
             </div>
+            <button type="button" id="btn-reiniciar-material" class="shrink-0 bg-red-100 hover:bg-red-200 text-red-700 border border-red-200 px-3 py-2 rounded-xl text-xs font-bold">🗑️ Reiniciar material a 0</button>
           </div>
 
           <div id="inventario-mesas-resumen" class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
@@ -148,16 +149,15 @@
 
         <section class="border-b pb-5">
           <h3 class="text-md font-bold mb-3 text-slate-700">1.3 Registrar Venta Directa / Fotos</h3>
-          <form id="form-evento" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
+          <form id="form-evento" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
             <input type="date" id="evento-fecha" required class="p-2.5 border rounded-xl text-sm">
             <input type="text" id="evento-nombre" placeholder="Cliente / Descripción" required class="p-2.5 border rounded-xl text-sm">
-            <input type="number" id="evento-fotos" placeholder="Fotos impresas ($10 c/u)" min="0" value="0" required class="p-2.5 border rounded-xl text-sm">
-            <input type="number" id="evento-cartuchos" placeholder="Cartuchos usados" min="0" value="0" required class="p-2.5 border rounded-xl text-sm">
+            <input type="number" id="evento-fotos" placeholder="Total de fotos" min="0" required class="p-2.5 border rounded-xl text-sm">
             <input type="number" id="evento-monto" placeholder="Total Cobrado ($)" step="0.01" min="0" required class="p-2.5 border rounded-xl text-sm">
-            <div class="md:col-span-2 lg:col-span-5 bg-slate-50 border rounded-xl px-3 py-2 text-xs text-slate-600">
-              Cada foto impresa descontará automáticamente <strong>1 folder</strong> y <strong>1 hoja</strong>. Los cartuchos se descuentan según el valor capturado en “Cartuchos usados”.
+            <div class="md:col-span-2 lg:col-span-4 bg-slate-50 border rounded-xl px-3 py-2 text-xs text-slate-600">
+              Cada foto impresa descontará automáticamente <strong>1 folder</strong> y <strong>1 hoja</strong>.
             </div>
-            <button type="submit" class="md:col-span-2 lg:col-span-5 bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm">Guardar Venta y Descontar Material</button>
+            <button type="submit" class="md:col-span-2 lg:col-span-4 bg-emerald-600 text-white py-3 rounded-xl font-bold text-sm">Guardar Venta y Descontar Material</button>
           </form>
         </section>
 
@@ -451,6 +451,30 @@
       document.getElementById('usados-cartuchos').innerText = Math.max(0, i.cartuchosTotal - i.cartuchosDisponibles);
     }
 
+    document.getElementById('btn-reiniciar-material').addEventListener('click', () => {
+      const confirmar = confirm(
+        '¿Reiniciar TODO el inventario de material a 0?\n\n' +
+        'Folders, hojas y cartuchos quedarán en 0.\n' +
+        'El historial de eventos NO se borrará.'
+      );
+
+      if (!confirmar) return;
+
+      inventarioMesasRef.set({
+        foldersTotal: 0,
+        foldersDisponibles: 0,
+        papelTotal: 0,
+        papelDisponible: 0,
+        cartuchosTotal: 0,
+        cartuchosDisponibles: 0
+      }).then(() => {
+        alert('Inventario reiniciado correctamente a 0.');
+      }).catch((error) => {
+        console.error(error);
+        alert('No se pudo reiniciar el inventario. Revisa la conexión o las reglas de Firebase.');
+      });
+    });
+
     document.getElementById('form-material-mesas').addEventListener('submit', (e) => {
       e.preventDefault();
       const folders = parseInt(document.getElementById('material-folders-agregar').value) || 0;
@@ -485,15 +509,13 @@
       const fecha = document.getElementById('evento-fecha').value;
       const nombre = document.getElementById('evento-nombre').value.trim();
       const fotos = parseInt(document.getElementById('evento-fotos').value) || 0;
-      const cartuchosUsados = parseInt(document.getElementById('evento-cartuchos').value) || 0;
       const montoTotal = parseFloat(document.getElementById('evento-monto').value);
       const costoImpresion = fotos * 10;
       const montoNeto = montoTotal - costoImpresion;
 
-      if (fotos < 0 || cartuchosUsados < 0) return alert('Las cantidades de material no pueden ser negativas.');
+      if (fotos < 0) return alert('La cantidad de fotos no puede ser negativa.');
       if (fotos > inventarioMesasActual.foldersDisponibles) return alert(`No hay folders suficientes. Disponibles: ${inventarioMesasActual.foldersDisponibles}.`);
       if (fotos > inventarioMesasActual.papelDisponible) return alert(`No hay hojas suficientes. Disponibles: ${inventarioMesasActual.papelDisponible}.`);
-      if (cartuchosUsados > inventarioMesasActual.cartuchosDisponibles) return alert(`No hay cartuchos suficientes. Disponibles: ${inventarioMesasActual.cartuchosDisponibles}.`);
 
       const desglose = {};
       let totalDesglosado = 0;
@@ -508,12 +530,11 @@
 
       inventarioMesasRef.transaction((actual) => {
         const i = normalizarInventario(actual);
-        if (fotos > i.foldersDisponibles || fotos > i.papelDisponible || cartuchosUsados > i.cartuchosDisponibles) {
+        if (fotos > i.foldersDisponibles || fotos > i.papelDisponible) {
           return;
         }
         i.foldersDisponibles -= fotos;
         i.papelDisponible -= fotos;
-        i.cartuchosDisponibles -= cartuchosUsados;
         return i;
       }).then((resultado) => {
         if (!resultado.committed) throw new Error('STOCK_INSUFICIENTE');
@@ -532,7 +553,6 @@
           materialUsado: {
             folders: fotos,
             hojas: fotos,
-            cartuchos: cartuchosUsados
           },
           stockDespues: {
             folders: stockDespues.foldersDisponibles,
@@ -542,8 +562,6 @@
         });
       }).then(() => {
         document.getElementById('form-evento').reset();
-        document.getElementById('evento-fotos').value = 0;
-        document.getElementById('evento-cartuchos').value = 0;
       }).catch((error) => {
         if (error.message === 'STOCK_INSUFICIENTE') {
           alert('El inventario cambió y ya no hay material suficiente. Revisa las existencias actuales.');
@@ -556,7 +574,6 @@
             const i = normalizarInventario(actual);
             i.foldersDisponibles += fotos;
             i.papelDisponible += fotos;
-            i.cartuchosDisponibles += cartuchosUsados;
             return i;
           });
         }
@@ -579,7 +596,7 @@
         const stock = ev.stockDespues || null;
         let materialHtml = '<div class="text-xs text-slate-400">Sin registro de material</div>';
         if (material) {
-          materialHtml = `<div class="text-xs space-y-0.5"><div>📁 ${material.folders || 0} folders</div><div>📄 ${material.hojas || 0} hojas</div><div>🖨️ ${material.cartuchos || 0} cartuchos</div>`;
+          materialHtml = `<div class="text-xs space-y-0.5"><div>📁 ${material.folders || 0} folders</div><div>📄 ${material.hojas || 0} hojas</div>`;
           if (stock) materialHtml += `<div class="text-[10px] text-slate-400 pt-1">Quedaron: ${stock.folders} / ${stock.hojas} / ${stock.cartuchos}</div>`;
           materialHtml += '</div>';
         }
